@@ -33,5 +33,5 @@ app.get('/', (req, res) => {
 
 // Iniciar el servidor
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en https://apireact-evp2.onrender.com${PORT}`);
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
