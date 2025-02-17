@@ -4,6 +4,7 @@ const Monto = require('../models/Montos'); // Importar el modelo de Monto
 const Notification = require('../models/Notification'); // Importar el modelo de Notification
 const User = require('../models/User'); // Importar el modelo de User
 
+
 const router = express.Router();
 
 // Middleware para validar campos requeridos
