@@ -5,7 +5,6 @@ const Cors = require('cors');
 const userRoutes = require('./routes/user');
 const montosRoutes = require('./routes/montos');
 const notificationsRoutes = require('./routes/notifications'); 
-const verificarToken = require("./middleware/verificartoken");
 const allowedOrigins = ['https://proyectoceleste.vercel.app' , 'http://localhost:5173'];
 
 
@@ -27,8 +26,8 @@ app.use((req, res, next) => {
 app.use(Cors());
 app.use(express.json());
 app.use('/api/users', userRoutes);
-app.use('/api/montos', verificarToken, montosRoutes);
-app.use('/api/notifications', verificarToken, notificationsRoutes);
+app.use('/api/montos', montosRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // Conexión a MongoDB
 mongoose.connect(process.env.MONGO_URI, {
