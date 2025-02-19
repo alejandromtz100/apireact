@@ -1,9 +1,9 @@
 const express = require('express');
-const moment = require('moment'); // Importar moment para formatear fechas
-const Monto = require('../models/Montos'); // Importar el modelo de Monto
-const Notification = require('../models/Notification'); // Importar el modelo de Notification
-const User = require('../models/User'); // Importar el modelo de User
-
+const moment = require('moment'); // Para formatear fechas
+const Monto = require('../models/Montos');
+const Notification = require('../models/Notification');
+const User = require('../models/User');
+const verifyToken = require('../middlewares/verifyToken'); // Importa el middleware
 
 const router = express.Router();
 
@@ -16,8 +16,8 @@ const validateMontoFields = (req, res, next) => {
   next();
 };
 
-// Crear un monto
-router.post('/register', validateMontoFields, async (req, res) => {
+// Crear un monto (requiere token)
+router.post('/register', verifyToken, validateMontoFields, async (req, res) => {
   try {
     const { name, description, amount, date, department, tower } = req.body;
 
@@ -52,8 +52,8 @@ router.post('/register', validateMontoFields, async (req, res) => {
   }
 });
 
-// Obtener todos los montos
-router.get('/mostrar', async (req, res) => {
+// Obtener todos los montos (puedes aplicar token si lo requieres)
+router.get('/mostrar', verifyToken, async (req, res) => {
   try {
     const montos = await Monto.find();
     const formattedMontos = montos.map(monto => ({
