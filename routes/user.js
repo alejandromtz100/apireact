@@ -16,7 +16,7 @@ const tokenBlacklist = [];
  * Además, se verifica que el token no esté en la blacklist.
  */
 const verifyToken = (req, res, next) => {
-  const token = req.header('Authorization');
+  const token = req.header('Authorization') || req.cookies.token; // Verifica el token en el header o en las cookies
   if (!token) {
     return res.status(401).json({ message: 'Acceso denegado. No se proporcionó token.' });
   }
@@ -71,7 +71,7 @@ router.get('/me/:id', verifyToken, async (req, res) => {
  * Si es correcto, se genera y devuelve un JWT.
  */
 router.post('/login', async (req, res) => {
-  const { phoneNumber, password } = req.body;
+  const { phoneNumber, password, rememberMe } = req.body;
 
   if (!phoneNumber || !password) {
     return res.status(400).json({ message: 'Número de teléfono y contraseña son requeridos' });
@@ -90,12 +90,21 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Contraseña incorrecta' });
     }
 
-    // Genera el token JWT (expira en 1 hora)
+    // Define la expiración del token basado en la opción "Recordar en este dispositivo"
+    const expiresIn = rememberMe ? '30d' : '1h'; // 30 días o 1 hora
+
+    // Genera el token JWT
     const token = jwt.sign(
       { id: user._id, role: user.role },
       JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn }
     );
+
+    // Si el usuario selecciona "Recordar en este dispositivo", guarda el token en la base de datos
+    if (rememberMe) {
+      user.rememberToken = token;
+      await user.save();
+    }
 
     res.status(200).json({ message: 'Login exitoso', token, user });
   } catch (err) {
@@ -177,9 +186,17 @@ router.delete('/:id', async (req, res) => {
  * Se utiliza el middleware verifyToken para asegurar que se envíe un token válido.
  * Luego se agrega el token a la blacklist para invalidarlo.
  */
-router.post('/logout', verifyToken, (req, res) => {
-  const token = req.header('Authorization');
+router.post('/logout', verifyToken, async (req, res) => {
+  const token = req.header('Authorization') || req.cookies.token;
   tokenBlacklist.push(token);
+
+  // Eliminar el token de la base de datos si existe
+  const user = await User.findById(req.user.id);
+  if (user && user.rememberToken === token) {
+    user.rememberToken = null;
+    await user.save();
+  }
+
   res.status(200).json({ message: 'Sesión cerrada con éxito' });
 });
 
