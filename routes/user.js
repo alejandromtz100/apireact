@@ -147,21 +147,34 @@ router.post('/register', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { name, phoneNumber, department, tower, password, role } = req.body;
+
+    // Buscamos al usuario antes de actualizar para poder acceder a sus datos actuales.
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    // Datos a actualizar
     let updatedData = { name, phoneNumber, department, tower, role };
 
-    // Si se envía la contraseña, se encripta
+    // Si se envía una nueva contraseña:
     if (password) {
+      // Si el usuario tenía un token activo, se invalida (para cerrar sesión en todos los dispositivos)
+      if (user.rememberToken) {
+        tokenBlacklist.push(user.rememberToken);
+      }
+      // Se encripta la nueva contraseña
       const salt = await bcrypt.genSalt(10);
       updatedData.password = await bcrypt.hash(password, salt);
+      // Se elimina el token almacenado para forzar el cierre de sesión en todos los dispositivos
+      updatedData.rememberToken = null;
     }
 
+    // Actualizamos al usuario con los nuevos datos
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       updatedData,
       { new: true, runValidators: true }
     );
 
-    if (!updatedUser) return res.status(404).json({ message: 'Usuario no encontrado' });
     res.status(200).json(updatedUser);
   } catch (err) {
     res.status(400).json({ message: 'Error al actualizar el usuario', error: err.message });
