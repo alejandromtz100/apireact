@@ -141,34 +141,6 @@ router.post('/register', async (req, res) => {
 });
 
 /**
- * Ruta para actualizar un usuario por ID.
- * Si se envía una nueva contraseña, ésta se encripta antes de actualizar.
- */
-router.put('/:id', async (req, res) => {
-  try {
-    const { name, phoneNumber, department, tower, password, role } = req.body;
-    let updatedData = { name, phoneNumber, department, tower, role };
-
-    // Si se envía la contraseña, se encripta
-    if (password) {
-      const salt = await bcrypt.genSalt(10);
-      updatedData.password = await bcrypt.hash(password, salt);
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
-      updatedData,
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedUser) return res.status(404).json({ message: 'Usuario no encontrado' });
-    res.status(200).json(updatedUser);
-  } catch (err) {
-    res.status(400).json({ message: 'Error al actualizar el usuario', error: err.message });
-  }
-});
-
-/**
  * Ruta para eliminar un usuario por ID
  */
 router.delete('/:id', async (req, res) => {
@@ -181,7 +153,10 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-router.get('/todos', verifyToken, async (req, res) => {
+/**
+ * Ruta para obtener todos los usuarios (protegida)
+ */
+router.get('/all', verifyToken, async (req, res) => {
   try {
     const users = await User.find();
     res.status(200).json(users);
@@ -190,6 +165,36 @@ router.get('/todos', verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * Ruta para actualizar parcialmente un usuario por ID (protegida)
+ */
+router.patch('/update/:id', verifyToken, async (req, res) => {
+  try {
+    // Copiamos los campos que se desean actualizar
+    const updateFields = { ...req.body };
+
+    // Si se envía una nueva contraseña, se encripta
+    if (updateFields.password) {
+      const salt = await bcrypt.genSalt(10);
+      updateFields.password = await bcrypt.hash(updateFields.password, salt);
+    }
+
+    // Actualizamos el usuario con los campos enviados
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateFields },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    res.status(200).json(updatedUser);
+  } catch (err) {
+    res.status(400).json({ message: 'Error al actualizar el usuario', error: err.message });
+  }
+});
 
 /**
  * Ruta para el logout.
