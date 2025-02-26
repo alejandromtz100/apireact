@@ -170,8 +170,20 @@ router.get('/all', verifyToken, async (req, res) => {
  */
 router.patch('/update/:id', verifyToken, async (req, res) => {
   try {
-    // Copiamos los campos que se desean actualizar
     const updateFields = { ...req.body };
+
+    // Si se envía una nueva contraseña o número de teléfono, invalidar el token
+    if (updateFields.password || updateFields.phoneNumber) {
+      const token = req.header('Authorization') || req.cookies.token;
+      tokenBlacklist.push(token);
+
+      // Eliminar el token de la base de datos si existe
+      const user = await User.findById(req.user.id);
+      if (user && user.rememberToken === token) {
+        user.rememberToken = null;
+        await user.save();
+      }
+    }
 
     // Si se envía una nueva contraseña, se encripta
     if (updateFields.password) {
@@ -216,3 +228,7 @@ router.post('/logout', verifyToken, async (req, res) => {
 });
 
 module.exports = router;
+
+router.post('/verify-token', verifyToken, (req, res) => {
+  res.status(200).json({ message: 'Token válido' });
+});
