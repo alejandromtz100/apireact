@@ -16,30 +16,22 @@ const tokenBlacklist = [];
  * Además, se verifica que el token no esté en la blacklist.
  */
 const verifyToken = (req, res, next) => {
-  // Verifica el token en el header o en las cookies
-  const token = req.header('Authorization') || req.cookies.token;
-
-  // Si no hay token, deniega el acceso
+  const token = req.header('Authorization') || req.cookies.token; // Verifica el token en el header o en las cookies
   if (!token) {
     return res.status(401).json({ message: 'Acceso denegado. No se proporcionó token.' });
   }
 
-  // Verifica si el token fue invalidado (por ejemplo, después de un logout)
+  // Verifica si el token fue invalidado (logout)
   if (tokenBlacklist.includes(token)) {
     return res.status(401).json({ message: 'Token ha sido invalidado. Inicie sesión de nuevo.' });
   }
 
   try {
-    // Verifica y decodifica el token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Usa la clave secreta desde las variables de entorno
-    req.user = decoded; // Agrega la información del usuario al objeto `req` para su uso posterior
-    next(); // Continúa con la siguiente función middleware o controlador
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded; // Agregamos la info del usuario al request
+    next();
   } catch (err) {
-    // Maneja errores de token inválido o expirado
-    if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: 'Token expirado. Inicie sesión de nuevo.' });
-    }
-    return res.status(400).json({ message: 'Token inválido.' });
+    return res.status(400).json({ message: 'Token inválido' });
   }
 };
 
@@ -186,9 +178,6 @@ router.patch('/update/:id', verifyToken, async (req, res) => {
       const salt = await bcrypt.genSalt(10);
       updateFields.password = await bcrypt.hash(updateFields.password, salt);
     }
-
-    // Eliminamos el campo token para no sobrescribirlo
-    delete updateFields.token;
 
     // Actualizamos el usuario con los campos enviados
     const updatedUser = await User.findByIdAndUpdate(
