@@ -170,16 +170,13 @@ router.get('/all', verifyToken, async (req, res) => {
  */
 router.patch('/update/:id', verifyToken, async (req, res) => {
   try {
-    // Copiamos los campos que se desean actualizar
     const updateFields = { ...req.body };
 
-    // Si se envía una nueva contraseña, se encripta
     if (updateFields.password) {
       const salt = await bcrypt.genSalt(10);
       updateFields.password = await bcrypt.hash(updateFields.password, salt);
     }
 
-    // Actualizamos el usuario con los campos enviados
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       { $set: updateFields },
@@ -189,6 +186,10 @@ router.patch('/update/:id', verifyToken, async (req, res) => {
     if (!updatedUser) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
+
+    // Invalidar el token actual
+    const token = req.header('Authorization') || req.cookies.token;
+    tokenBlacklist.push(token);
 
     res.status(200).json(updatedUser);
   } catch (err) {
@@ -213,6 +214,10 @@ router.post('/logout', verifyToken, async (req, res) => {
   }
 
   res.status(200).json({ message: 'Sesión cerrada con éxito' });
+});
+
+router.post('/verify-token', verifyToken, (req, res) => {
+  res.status(200).json({ message: 'Token válido' });
 });
 
 module.exports = router;
