@@ -28,19 +28,13 @@ const verifyToken = async (req, res, next) => {
     // Verificar si el usuario tiene un rememberToken en la base de datos y coincide
     const user = await User.findById(decoded.id);
     if (!user || (user.rememberToken && user.rememberToken !== token)) {
-      return res.status(401).json({ 
-        message: 'Token no válido o expirado. Por favor, inicie sesión nuevamente.',
-        code: 'TOKEN_INVALID' // Código específico para manejar en el frontend
-      });
+      return res.status(401).json({ message: 'Token no válido o expirado. Por favor, inicie sesión nuevamente.' });
     }
 
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(400).json({ 
-      message: 'Token inválido',
-      code: 'TOKEN_INVALID' // Código específico para manejar en el frontend
-    });
+    return res.status(400).json({ message: 'Token inválido' });
   }
 };
 
@@ -127,7 +121,7 @@ router.post('/login', async (req, res) => {
  */
 router.post('/register', async (req, res) => {
   try {
-    const { name, phoneNumber, department, tower, password, role } = req.body;
+    const { name, phoneNumber, department, tower, password, role = 'user' } = req.body; // Asigna 'user' por defecto
 
     // Genera un "salt" y encripta la contraseña
     const salt = await bcrypt.genSalt(10);
@@ -139,8 +133,8 @@ router.post('/register', async (req, res) => {
       department,
       tower,
       password: hashedPassword,
-      role
-    });      
+      role // Aquí se asigna el rol
+    });
 
     const savedUser = await newUser.save();
     res.status(201).json(savedUser);
@@ -179,19 +173,18 @@ router.get('/all', verifyToken, async (req, res) => {
  */
 router.patch('/update/:id', verifyToken, async (req, res) => {
   try {
-    // Copiamos los campos que se desean actualizar
     const updateFields = { ...req.body };
 
-    // Si se envía una nueva contraseña, se encripta
+    // Si se envía una nueva contraseña, encriptarla
     if (updateFields.password) {
       const salt = await bcrypt.genSalt(10);
       updateFields.password = await bcrypt.hash(updateFields.password, salt);
     }
 
-    // Eliminar el rememberToken para forzar el cierre de sesión del usuario editado
+    // Forzar el cierre de sesión eliminando el rememberToken
     updateFields.rememberToken = null;
 
-    // Actualizamos el usuario con los campos enviados
+    // Actualizar el usuario
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       { $set: updateFields },
@@ -202,7 +195,7 @@ router.patch('/update/:id', verifyToken, async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    res.status(200).json(updatedUser);
+    res.status(200).json({ message: 'Usuario actualizado. Por favor, inicie sesión nuevamente.', updatedUser });
   } catch (err) {
     res.status(400).json({ message: 'Error al actualizar el usuario', error: err.message });
   }
