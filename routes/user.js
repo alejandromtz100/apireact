@@ -15,25 +15,29 @@ const tokenBlacklist = [];
  * Se espera que el token se envíe en el header 'Authorization'.
  * Además, se verifica que el token no esté en la blacklist.
  */
-const verifyToken = (req, res, next) => {
-  const token = req.header('Authorization') || req.cookies.token; // Verifica el token en el header o en las cookies
+const verifyToken = async (req, res, next) => {
+  const token = req.header('Authorization') || req.cookies.token;
+
   if (!token) {
     return res.status(401).json({ message: 'Acceso denegado. No se proporcionó token.' });
   }
 
-  // Verifica si el token fue invalidado (logout)
-  if (tokenBlacklist.includes(token)) {
-    return res.status(401).json({ message: 'Token ha sido invalidado. Inicie sesión de nuevo.' });
-  }
-
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded; // Agregamos la info del usuario al request
+
+    // Verificar si el usuario tiene un rememberToken en la base de datos y coincide
+    const user = await User.findById(decoded.id);
+    if (!user || (user.rememberToken && user.rememberToken !== token)) {
+      return res.status(401).json({ message: 'Token no válido o expirado.' });
+    }
+
+    req.user = decoded;
     next();
   } catch (err) {
     return res.status(400).json({ message: 'Token inválido' });
   }
 };
+
 
 /**
  * Ruta para buscar un usuario por nombre (no protegida)
@@ -170,13 +174,16 @@ router.get('/all', verifyToken, async (req, res) => {
  */
 router.patch('/update/:id', verifyToken, async (req, res) => {
   try {
+    // Copiamos los campos que se desean actualizar
     const updateFields = { ...req.body };
 
+    // Si se envía una nueva contraseña, se encripta
     if (updateFields.password) {
       const salt = await bcrypt.genSalt(10);
       updateFields.password = await bcrypt.hash(updateFields.password, salt);
     }
 
+    // Actualizamos el usuario con los campos enviados
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       { $set: updateFields },
@@ -187,15 +194,11 @@ router.patch('/update/:id', verifyToken, async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    // Invalidar el token actual
-    const token = req.header('Authorization') || req.cookies.token;
-    tokenBlacklist.push(token);
-
     res.status(200).json(updatedUser);
   } catch (err) {
     res.status(400).json({ message: 'Error al actualizar el usuario', error: err.message });
   }
-}); 
+});
 
 /**
  * Ruta para el logout.
@@ -204,11 +207,13 @@ router.patch('/update/:id', verifyToken, async (req, res) => {
  */
 router.post('/logout', verifyToken, async (req, res) => {
   const token = req.header('Authorization') || req.cookies.token;
+
+  // Agregar a la blacklist para invalidarlo temporalmente
   tokenBlacklist.push(token);
 
-  // Eliminar el token de la base de datos si existe
+  // Eliminar el token de la base de datos
   const user = await User.findById(req.user.id);
-  if (user && user.rememberToken === token) {
+  if (user) {
     user.rememberToken = null;
     await user.save();
   }
@@ -216,8 +221,5 @@ router.post('/logout', verifyToken, async (req, res) => {
   res.status(200).json({ message: 'Sesión cerrada con éxito' });
 });
 
-router.post('/verify-token', verifyToken, (req, res) => {
-  res.status(200).json({ message: 'Token válido' });
-});
 
 module.exports = router;
