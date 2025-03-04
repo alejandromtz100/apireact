@@ -182,10 +182,8 @@ router.patch('/update/:id', verifyToken, async (req, res) => {
       updateFields.password = await bcrypt.hash(updateFields.password, salt);
     }
 
-    // Eliminar el rememberToken si se está actualizando el usuario
-    if (updateFields.rememberToken === null) {
-      updateFields.rememberToken = null;
-    }
+    // Eliminar el rememberToken para forzar el cierre de sesión del usuario editado
+    updateFields.rememberToken = null;
 
     // Actualizamos el usuario con los campos enviados
     const updatedUser = await User.findByIdAndUpdate(
