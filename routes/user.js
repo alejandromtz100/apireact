@@ -28,7 +28,7 @@ const verifyToken = async (req, res, next) => {
     // Verificar si el usuario tiene un rememberToken en la base de datos y coincide
     const user = await User.findById(decoded.id);
     if (!user || (user.rememberToken && user.rememberToken !== token)) {
-      return res.status(401).json({ message: 'Token no válido o expirado.' });
+      return res.status(401).json({ message: 'Token no válido o expirado. Por favor, inicie sesión nuevamente.' });
     }
 
     req.user = decoded;
@@ -37,7 +37,6 @@ const verifyToken = async (req, res, next) => {
     return res.status(400).json({ message: 'Token inválido' });
   }
 };
-
 
 /**
  * Ruta para buscar un usuario por nombre (no protegida)
@@ -172,9 +171,9 @@ router.get('/all', verifyToken, async (req, res) => {
 /**
  * Ruta para actualizar parcialmente un usuario por ID (protegida)
  */
-// Ruta para actualizar parcialmente un usuario (protegida)
 router.patch('/update/:id', verifyToken, async (req, res) => {
   try {
+    // Copiamos los campos que se desean actualizar
     const updateFields = { ...req.body };
 
     // Si se envía una nueva contraseña, se encripta
@@ -183,9 +182,12 @@ router.patch('/update/:id', verifyToken, async (req, res) => {
       updateFields.password = await bcrypt.hash(updateFields.password, salt);
     }
 
-    // Si deseas cerrar sesión tras actualizar, elimina el token guardado
-    updateFields.rememberToken = null;
+    // Eliminar el rememberToken si se está actualizando el usuario
+    if (updateFields.rememberToken === null) {
+      updateFields.rememberToken = null;
+    }
 
+    // Actualizamos el usuario con los campos enviados
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       { $set: updateFields },
@@ -201,7 +203,6 @@ router.patch('/update/:id', verifyToken, async (req, res) => {
     res.status(400).json({ message: 'Error al actualizar el usuario', error: err.message });
   }
 });
-
 
 /**
  * Ruta para el logout.
