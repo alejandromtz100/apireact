@@ -195,7 +195,7 @@ router.patch('/update/:id', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(400).json({ message: 'Error al actualizar el usuario', error: err.message });
   }
-});
+}); 
 
 /**
  * Ruta para el logout.
