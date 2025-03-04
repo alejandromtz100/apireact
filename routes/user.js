@@ -121,7 +121,7 @@ router.post('/login', async (req, res) => {
  */
 router.post('/register', async (req, res) => {
   try {
-    const { name, phoneNumber, department, tower, password, role = 'user' } = req.body; // Asigna 'user' por defecto
+    const { name, phoneNumber, department, tower, password, role } = req.body;
 
     // Genera un "salt" y encripta la contraseña
     const salt = await bcrypt.genSalt(10);
@@ -133,8 +133,8 @@ router.post('/register', async (req, res) => {
       department,
       tower,
       password: hashedPassword,
-      role // Aquí se asigna el rol
-    });
+      role
+    });      
 
     const savedUser = await newUser.save();
     res.status(201).json(savedUser);
