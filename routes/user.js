@@ -28,13 +28,19 @@ const verifyToken = async (req, res, next) => {
     // Verificar si el usuario tiene un rememberToken en la base de datos y coincide
     const user = await User.findById(decoded.id);
     if (!user || (user.rememberToken && user.rememberToken !== token)) {
-      return res.status(401).json({ message: 'Token no válido o expirado. Por favor, inicie sesión nuevamente.' });
+      return res.status(401).json({ 
+        message: 'Token no válido o expirado. Por favor, inicie sesión nuevamente.',
+        code: 'TOKEN_INVALID' // Código específico para manejar en el frontend
+      });
     }
 
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(400).json({ message: 'Token inválido' });
+    return res.status(400).json({ 
+      message: 'Token inválido',
+      code: 'TOKEN_INVALID' // Código específico para manejar en el frontend
+    });
   }
 };
 
