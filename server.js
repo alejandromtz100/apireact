@@ -21,7 +21,7 @@ app.use(express.json());
 app.use('/api/users', userRoutes);
 app.use('/api/montos', montosRoutes);
 app.use('/api/notifications', notificationsRoutes);
-app.use('/api/whatsapp', WhatsappRoutes);
+app.use('/api', WhatsappRoutes);
 
 // Conexión a MongoDB
 mongoose.connect(process.env.MONGO_URI, {

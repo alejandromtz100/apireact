@@ -46,7 +46,7 @@ router.post('/send-whatsapp', async (req, res) => {
         to: phoneNumber,
         type: 'template',
         template: {
-          name: 'resta',
+          name: 'alejandro',
           language: { code: 'en' },
           components: [
             {
