@@ -5,7 +5,7 @@ const Cors = require('cors');
 const userRoutes = require('./routes/user');
 const montosRoutes = require('./routes/montos');
 const notificationsRoutes = require('./routes/notifications'); 
-const allowedOrigins = ['https://proyectoceleste.vercel.app' , 'http://localhost:5173'];
+const WhatsappRoutes = require('./routes/whatsapp')
 
 
 dotenv.config();
@@ -13,14 +13,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-      next();
-  } else {
-      res.status(403).json({ error: 'Acceso no permitido' });
-  }
-});
+
 
 // Middleware
 app.use(Cors());
@@ -28,6 +21,7 @@ app.use(express.json());
 app.use('/api/users', userRoutes);
 app.use('/api/montos', montosRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/whatsapp', WhatsappRoutes);
 
 // Conexión a MongoDB
 mongoose.connect(process.env.MONGO_URI, {
