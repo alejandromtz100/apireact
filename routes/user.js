@@ -135,7 +135,8 @@ router.post('/login', async (req, res) => {
  */
 router.post('/register', async (req, res) => {
   try {
-    const { name, phoneNumber, department, tower, password, role } = req.body;
+    // Agregamos email a los campos recibidos
+    const { name, phoneNumber, email, department, tower, password, role } = req.body;
 
     // Genera un "salt" y encripta la contraseña
     const salt = await bcrypt.genSalt(10);
@@ -144,6 +145,7 @@ router.post('/register', async (req, res) => {
     const newUser = new User({
       name,
       phoneNumber,
+      email, // Campo email agregado
       department,
       tower,
       password: hashedPassword,
@@ -156,6 +158,7 @@ router.post('/register', async (req, res) => {
     res.status(400).json({ message: 'Error al crear el usuario', error: err.message });
   }
 });
+
 
 /**
  * Ruta para eliminar un usuario por ID
