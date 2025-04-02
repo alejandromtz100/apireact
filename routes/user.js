@@ -277,7 +277,7 @@ router.post('/request-password-reset', async (req, res) => {
       html: `
         <p>Hola,</p>
         <p>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta.</p>
-        <p>Por favor haz clic en el siguiente enlace para restablecer tu contraseña:</p>
+        <p>Por favor haz clic en el siguiente enlace para restablecer tu contraseña:</p> 
         <a href="${resetLink}">${resetLink}</a>
         <p>Si no solicitaste este cambio, por favor ignora este correo.</p>
         <p>El enlace expirará en 1 hora.</p>
